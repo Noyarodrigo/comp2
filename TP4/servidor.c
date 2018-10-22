@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <netdb.h>
+#include "tp4.h"
 
 void argumentosvacios(int argc){
   if (argc==1) {
@@ -16,41 +17,17 @@ void argumentosvacios(int argc){
   }
 }
 
-char * obtenerargumentos(char buff){
-	char *token="", delim[]=" ", aux[1024];
-	static char * argumentos[2];
-	int i=0;
-	strcpy(aux,(char *)&buff);
-  	token=strtok(aux, delim);
-  	while (token != NULL){
-		argumentos[i]=token;
-		i++;
-		token = strtok(NULL, delim);
-	}
-	printf("Pagina:%s\n",argumentos[0]);
-	printf("Palabra:%s\n",argumentos[1]);
-   return argumentos;
-}
-
-int parse(char * buff2, char palabra){
-    int x,z=0;
-    char *token="";
-    char delim[] = " ,;:.-_<>\n";
-    token=strtok(buff2, delim);
-	while (token != NULL){
-		x=strcmp(token,&palabra);
-          if (x==0){
-            z=1;
-          }
-	    token = strtok(NULL, delim);
-	}
-    return z;
-}
+struct argumentos {
+    char direccion[40];
+    char barra[40];
+    char palabra[40];
+};
 
 int main(int argc, char * const argv[])
 {
-	int fc,fe, leido, conectado2, connfc, pid,z,flagp=0, opt,a=1,i=0, puerto;
-	char buff[1024], buff2[1024], argumentos[2],mensaje[100],delim[]=" ",*token="";
+	int fc,fe, leido, conectado2, connfc, pid,flagp=0, opt,a=1, puerto;
+	char buff[8192], buff2[8192], mensaje[500], buscar[100], z[200];
+  struct argumentos arg1;
 
 	struct sockaddr_in procrem={}; //crea la estructura del socket(_in = internet)
 
@@ -92,16 +69,7 @@ int main(int argc, char * const argv[])
 		if (pid==0){
 			while ((leido=read(connfc,buff,sizeof buff))>0){
 				printf("Mensaje recibido: %s\n", buff);
-				argumentos=obtenerargumentos(*buff);
-				//strcpy(argumentos,obtenerargumentos(*buff));
-				token=strtok(buff, delim);
-			  	/*while (token != NULL){
-					argumentos[i]=token;
-					i++;
-					token = strtok(NULL, delim);
-				}*/
-				printf("\nPagina: %s\n",argumentos[0]);
-				printf("Valor a buscar: %s\n",argumentos[1]);
+				arg1=obtenerargumentos(buff);
 
 				struct sockaddr_in serverhttp={};
 
@@ -112,7 +80,7 @@ int main(int argc, char * const argv[])
 				}
 				serverhttp.sin_family = AF_INET;
 				serverhttp.sin_port= htons(80);
-				struct hostent *hp = gethostbyname((char *)argumentos[0]);
+				struct hostent *hp = gethostbyname((char *)arg1.direccion);
 				inet_pton(AF_INET,inet_ntoa( *( struct in_addr*)( hp -> h_addr_list[0])), &serverhttp.sin_addr); //convierte el binario de addr_list a string y lo copia a un buffer (&server...)
 				setsockopt(fe, SOL_SOCKET, SO_REUSEADDR,&a, sizeof a);
 				conectado2 = connect(fe,(struct sockaddr *)&serverhttp, sizeof serverhttp);
@@ -120,21 +88,16 @@ int main(int argc, char * const argv[])
 			        perror ("connect");
 	                return -1;
 				}
-				sprintf(mensaje, "GET / HTTP/1.0\nHost: %s\nConnection: close\n\n", argumentos[0]);
-				printf("Enviando\n\n");
+				sprintf(mensaje, "GET /%s HTTP/1.0\nHost: %s\nConnection: close\n\n",arg1.barra, arg1.direccion);
 				write(fe, mensaje, sizeof mensaje);
 				while ((leido = read(fe, buff2 , sizeof buff2)) > 0){
 					if  (leido < 0 ){
 						perror ("read");
 						return -1;
 					}
-					write(1,buff2,leido);
-					z=parse(buff2, *argumentos[1]);
-					if (z==1){
-						write(connfc,"\nLa palabra ingresada fue encontrada en la pagina\n",49);
-					}else{
-						write(connfc,"\nLa palabra ingresada NO fue encontrada en la pagina\n",52);
-					}
+          strcpy(buscar,arg1.palabra);
+					strcpy(z,parse(buff2, buscar));
+					write(connfc,z,strlen(z));
 				}
 			}
 			return 0;

@@ -7,12 +7,12 @@ all: $(TARGETS)
 cliente: cliente.c
 	$(CC) $(CFLAGS) -o $@ $^ $(LDLIBS)
 
-servidor: servidor.c
+servidor: servidor.c obtenerargumentos.c parse.c
 	$(CC) $(CFLAGS) -o $@ $^ $(LDLIBS)
 
 test: cliente servidor
 	./servidor
 	./cliente -u http://www.um.edu.ar -t telefono
-		
-clean:	
+
+clean:
 	rm $(TARGETS) *.o
