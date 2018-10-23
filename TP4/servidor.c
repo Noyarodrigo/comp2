@@ -11,6 +11,8 @@
 #include <netdb.h>
 #include "tp4.h"
 
+extern char buff1[1024];
+
 void argumentosvacios(int argc){
   if (argc==1) {
     printf("\n...Se tomara el puerto 5000 por default...\n\n ");
@@ -26,7 +28,8 @@ struct argumentos {
 int main(int argc, char * const argv[])
 {
 	int fc,fe, leido, conectado2, connfc, pid,flagp=0, opt,a=1, puerto;
-	char buff[8192], buff2[8192], mensaje[500], buscar[100], z[200];
+	char buff[1024], buff2[1024], mensaje[300], buscar[100];
+  char * z;
   struct argumentos arg1;
 
 	struct sockaddr_in procrem={}; //crea la estructura del socket(_in = internet)
@@ -96,7 +99,8 @@ int main(int argc, char * const argv[])
 						return -1;
 					}
           strcpy(buscar,arg1.palabra);
-					strcpy(z,parse(buff2, buscar));
+          z=parse(buff2, buscar);
+					//strncpy(z,parse(buff2, buscar),strlen(parse(buff2, buscar)));
 					write(connfc,z,strlen(z));
 				}
 			}
