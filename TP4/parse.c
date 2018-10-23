@@ -5,7 +5,7 @@
 char * parse(char * buff2, char * palabra){
   char *token="";
   char delim[] = "\n";
-  char pila[4096], buscar[50];
+  char pila[8192], buscar[50];
   char *ret;
   strcpy(pila,buff2);
   strcpy(buscar, palabra);
