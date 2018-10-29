@@ -23,6 +23,9 @@ void argumentosvacios(int argc){
 struct argumentos {
     char direccion[40];
     char extension[40];
+    char protocolo[40];
+    char version[40];
+
 };
 
 struct configuracion {
@@ -30,15 +33,17 @@ struct configuracion {
     char droot[50];
 };
 
-void *hilo(void * connfc ){
-  char buff[200], buff2[10000], respuesta[10240],input[30];
+void *hilo(void * buff ){
+  char buff2[10000], respuesta[10240],input[30];
   int fd, leido, *con;
   struct argumentos arg1;
   struct stat st;
-  con=(int *)connfc;
-  leido=read(*con,buff,sizeof buff);
   arg1=obtenerargumentos(buff);
-  if((fd=open(arg1.direccion, O_RDWR , 0666))){
+  printf("Protocolo: %s\n",arg1.protocolo );
+  printf("Archivo: %s\n", arg1.direccion);
+  printf("Extension: %s\n",arg1.extension );
+  printf("Version: %s\n",arg1.version );
+  /*if((fd=open(arg1.direccion, O_RDWR , 0666))){
     strcpy(respuesta, "HTTP/1.1 200 OK");
   }else{
     strcpy(respuesta, "HTTP/1.1 404 Not Found");
@@ -60,7 +65,7 @@ void *hilo(void * connfc ){
     strcat(respuesta,"\nContent-type: image/jpeg\n");
   }
   leido = read(fd, buff2, 10000);
-  strncat(respuesta, buff2, leido);
+  strncat(respuesta, buff2, leido*/
   write(1,respuesta,strlen(respuesta));
   close(fd);
 	pthread_exit(NULL); //termina este hilo
@@ -68,9 +73,10 @@ void *hilo(void * connfc ){
 
 int main(int argc, char * const argv[])
 {
-	int fc, fd, connfc, flagp=0, opt,a=1,retorno, leido;
+	int fc, fd, flagp=0, opt,a=1,retorno, leido;
 	char buffarg[1024],archconf[50];
   char *token="", *token2="";
+  int * connfc = malloc(sizeof(int)*1024);
   struct configuracion conf;
   pthread_t tid;
 
@@ -104,7 +110,7 @@ int main(int argc, char * const argv[])
   token2=strtok(conf.droot,"=");
   token2 = strtok(NULL, "=");
   strcpy(conf.droot,token2);
-  printf("Puerto: %s\n",conf.puerto);
+  printf("\nPuerto: %s\n",conf.puerto);
   printf("root: %s\n",conf.droot);
 
 
@@ -114,7 +120,8 @@ int main(int argc, char * const argv[])
 		return -1;
 	}
 	procrem.sin_family = AF_INET;
-	procrem.sin_port= htons(atoi(conf.puerto));
+	//procrem.sin_port= htons(atoi(conf.puerto));
+  procrem.sin_port= htons(5000);
 	procrem.sin_addr.s_addr = htonl(INADDR_ANY);
 	setsockopt(fc, SOL_SOCKET, SO_REUSEADDR,&a, sizeof a);
 	if (bind(fc,(struct sockaddr *)&procrem,sizeof procrem)<0)
@@ -124,11 +131,16 @@ int main(int argc, char * const argv[])
 	}
 	listen(fc, 5);
 	while((connfc=accept(fc, NULL, 0))>0){	//si quisiera saber la direccion y puerto del cliente debería poner una estrucura (en el segundo arg) diferente a la struck usada antes. el 3ro es el tamaño del struck, en este caso es 0
-    //retorno = pthread_create(&tid, NULL, hilo,(void *) connfc); //crea un hilo y le asigna una funcion
-    write(connfc,"HTTP/1.1 200 OK\n\n",50);
-  /*  if (retorno<0){
+    char buff[1024];
+    printf("CONEXION ACEPTADA\n");
+    leido=read(connfc,buff,sizeof buff);
+    printf("%s\n",buff );
+    retorno = pthread_create(&tid, NULL, hilo,(void *) buff); //crea un hilo y le asigna una funcion
+    write(connfc,buff,leido);
+
+    if (retorno<0){
       printf("Error al crear el hilo\n");
-    }*/
+    }
   }
 	close(connfc);
 	return 0;
