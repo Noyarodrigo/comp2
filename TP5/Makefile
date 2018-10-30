@@ -1,12 +1,12 @@
 CC= gcc
-CFLAGS= -Wall -pthread
-LDFLAGS=-pthread
+CFLAGS= -Wall -g
+LDLIBS=-pthread
 TARGETS= servidor
 
 all: $(TARGETS)
 
 servidor: main.c obtenerargumentos.c parse.c
-	$(CC) $(CFLAGS) -o $@ $^ $(LDLIBS) $(LDFLAGS)
+	$(CC) $(CFLAGS) -o $@ $^ $(LDLIBS)
 
 test: cliente servidor
 	./servidor
