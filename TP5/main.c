@@ -13,6 +13,7 @@
 #include <netdb.h>
 #include <fcntl.h>
 #include <pthread.h>
+#include <sys/sendfile.h>
 #include "tp5.h"
 
 void argumentosvacios(int argc){
@@ -44,7 +45,7 @@ void *hilo(void * paramain ){
 
   pthread_detach(pthread_self());
 
-  char buff2[100000], input[1024];
+  char buff2[1000000], input[1024];
   int leido, fd;
   char ruta[150];
 
@@ -77,23 +78,23 @@ void *hilo(void * paramain ){
   }
   if (strcmp(arg1.extension, "pdf") == 0) {
     strcat(input,"Content-type: application/pdf\r\n\r\n");
-    //write(sd,"Content-type: application/pdf\r\n\r\n",strlen("\nContent-type: application/pdf\r\n\r\n"));
   }
   if (strcmp(arg1.extension, "txt") == 0) {
     strcat(input,"Content-type: text/plain\r\n\r\n");
-    //write(sd,"Content-type: text/plain\r\n\r\n",strlen("\nContent-type: text/plain\r\n\r\n"));
   }
   if (strcmp(arg1.extension, ".html") == 0) {
     strcat(input,"Content-type: text/html\r\n\r\n");
-    //write(sd,"Content-type: text/html\r\n\r\n",strlen("\nContent-type: text/html\r\n\r\n"));
   }
   if (strcmp(arg1.extension, ".jpg") == 0 || strcmp(arg1.extension, ".jpeg") == 0) {
     strcat(input,"Content-type: image/jpeg\r\n\r\n");
-    //write(sd,"Content-type: image/jpeg\r\n\r\n",strlen("\nContent-type: image/jpeg\r\n\r\n"));
   }
 
-  leido = read(fd, buff2, 100000);
+  //leido = read(fd, buff2, sizeof(buff2));
   write(sd,input,strlen(input));
+  int sf = sendfile(sd,fd,NULL,st.st_size);
+  if (sf<0){
+    perror("sendfile");
+  }
   write(sd,buff2,leido);
   printf("Archivo cerrado\n\n"); 
   close(fd);
