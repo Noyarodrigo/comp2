@@ -44,7 +44,7 @@ void *hilo(void * paramain ){
 
   pthread_detach(pthread_self());
 
-  char buff2[1024], input[30];
+  char buff2[100000], input[1024];
   int leido, fd;
   char ruta[150];
 
@@ -55,14 +55,12 @@ void *hilo(void * paramain ){
 
   strcpy(buff2,(*paramhilo).lectura);
   arg1=obtenerargumentos(buff2);
-  //sprintf(ruta, "%s%s\n",paramhilo->ruta,arg1.direccion );
-  sprintf(ruta, "%s%s\n",paramhilo->ruta,arg1.direccion );
+  snprintf(ruta,(strlen(paramhilo->ruta)+strlen(arg1.direccion)+1), "%s%s\n",paramhilo->ruta,arg1.direccion);
   printf("Protocolo: %s\n",arg1.protocolo );
   printf("Version: %s\n",arg1.version );
   printf("Extension: %s\n",arg1.extension );
   printf("Archivo: %s\n", ruta);
 
-  //fd= open(ruta, O_RDWR , 0666);
 
   fd= open(ruta, O_RDONLY);
   if (fd>0) {
@@ -78,22 +76,26 @@ void *hilo(void * paramain ){
     write(sd,input,strlen(input));
   }
   if (strcmp(arg1.extension, "pdf") == 0) {
-    write(sd,"Content-type: application/pdf\r\n\r\n",strlen("\nContent-type: application/pdf\r\n\r\n"));
+    strcat(input,"Content-type: application/pdf\r\n\r\n");
+    //write(sd,"Content-type: application/pdf\r\n\r\n",strlen("\nContent-type: application/pdf\r\n\r\n"));
   }
   if (strcmp(arg1.extension, "txt") == 0) {
-    write(sd,"Content-type: text/plain\r\n\r\n",strlen("\nContent-type: text/plain\r\n\r\n"));
+    strcat(input,"Content-type: text/plain\r\n\r\n");
+    //write(sd,"Content-type: text/plain\r\n\r\n",strlen("\nContent-type: text/plain\r\n\r\n"));
   }
   if (strcmp(arg1.extension, ".html") == 0) {
-    write(sd,"Content-type: text/html\r\n\r\n",strlen("\nContent-type: text/html\r\n\r\n"));
+    strcat(input,"Content-type: text/html\r\n\r\n");
+    //write(sd,"Content-type: text/html\r\n\r\n",strlen("\nContent-type: text/html\r\n\r\n"));
   }
   if (strcmp(arg1.extension, ".jpg") == 0 || strcmp(arg1.extension, ".jpeg") == 0) {
-    write(sd,"Content-type: image/jpeg\r\n\r\n",strlen("\nContent-type: image/jpeg\r\n\r\n"));
+    strcat(input,"Content-type: image/jpeg\r\n\r\n");
+    //write(sd,"Content-type: image/jpeg\r\n\r\n",strlen("\nContent-type: image/jpeg\r\n\r\n"));
   }
 
-  leido = read(fd, buff2, 10000);
+  leido = read(fd, buff2, 100000);
+  write(sd,input,strlen(input));
   write(sd,buff2,leido);
-  /*printf("Archivo cerrado\n");*/
-  //write((*paramhilo).sockete,"\n\n",2);
+  printf("Archivo cerrado\n\n"); 
   close(fd);
   close(sd);
 	//pthread_exit(NULL); //termina este hilo
@@ -149,8 +151,7 @@ int main(int argc, char * const argv[])
 		return -1;
 	}
 	procrem.sin_family = AF_INET;
-	//procrem.sin_port= htons(atoi(conf.puerto));
-  procrem.sin_port= htons(5000);
+	procrem.sin_port= htons(atoi(conf.puerto));
 	procrem.sin_addr.s_addr = htonl(INADDR_ANY);
 	setsockopt(fc, SOL_SOCKET, SO_REUSEADDR,&a, sizeof a);
 	if (bind(fc,(struct sockaddr *)&procrem,sizeof (procrem))<0)
