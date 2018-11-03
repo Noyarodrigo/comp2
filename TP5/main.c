@@ -46,7 +46,7 @@ void *hilo(void * paramain ){
   pthread_detach(pthread_self());
 
   char buff2[10000], input[1024], output[1024];
-  int fd;
+  int fd,fe;
   char ruta[150];
 
   struct argumentos arg1;
@@ -60,24 +60,44 @@ void *hilo(void * paramain ){
   printf("Protocolo: %s\n",arg1.protocolo );
   printf("Version: %s\n",arg1.version );
   printf("Extension: %s\n",arg1.extension );
-  printf("Archivo: %s\n", ruta);
+  printf("Ruta: %s\n", ruta);
 
 
   fd= open(ruta, O_RDONLY);
   if (fd>0) {
-    printf("Archivo abierto\n");
+    printf("\nArchivo abierto\n");
     strcpy(output,"HTTP/1.1 200 OK\r\n");
-    //write(sd,,16);
   }else{
-    strcpy(output,"HTTP/1.1 404 Not Found\r\n\r\n");
-    //write(sd,"HTTP/1.1 404 Not Found\r\n\r\n",strlen("HTTP/1.1 404 Not Found\r\n\r\n"));
     perror("open");
+    fe= open("archivos/404.jpg", O_RDONLY);
+    strcpy(output,"HTTP/1.1 404 Not Found\r\n");
+    if (fstat(fe,&st)!=-1){
+    sprintf(input, "Content-Length: %ld\r\n",st.st_size);
+    strcat(output,input);
+    }
+    strcat(output,"Content-Type: image/jpeg\r\n\r\n");
+    write(1,output,strlen(output)); 
+    write(sd,output,strlen(output)); //envia cabecera
+    int sf = sendfile(sd,fe,NULL,st.st_size); //envia archivo
+    if (sf<0){
+      perror("sendfile");
+    }
+    if (sf < st.st_size){
+      printf ("faltan enviar datos\n");
+    }
+    close (fe);
+    close (sd);
     pthread_exit(NULL); //termina este hilo
   }
   if (fstat(fd,&st)!=-1){
     sprintf(input, "Content-Length: %ld\r\n",st.st_size);
     strcat(output,input);
-   // write(sd,input,strlen(input));
+  }
+  if (strcmp(arg1.extension, "jpg") == 0) {
+    strcat(output,"Content-type: image/jpeg\r\n\r\n");
+  }
+  if (strcmp(arg1.extension, "jpeg") == 0){
+    strcat(output,"Content-type: image/jpeg\r\n\r\n");
   }
   if (strcmp(arg1.extension, "pdf") == 0) {
     strcat(output,"Content-type: application/pdf\r\n\r\n");
@@ -85,15 +105,14 @@ void *hilo(void * paramain ){
   if (strcmp(arg1.extension, "txt") == 0) {
     strcat(output,"Content-type: text/plain\r\n\r\n");
   }
-  if (strcmp(arg1.extension, ".html") == 0) {
+  if (strcmp(arg1.extension, "html") == 0) {
     strcat(output,"Content-type: text/html\r\n\r\n");
   }
-  if (strcmp(arg1.extension, ".jpg") == 0) {
-    strcat(output,"Content-type: image/jpeg\r\n\r\n");
+  if (strcmp(arg1.extension, "ico") == 0) {
+    strcat(output,"Content-type: image/x-icon\r\n\r\n");
   }
-  if (strcmp(arg1.extension, ".jpeg") == 0){
-    strcat(output,"Content-type: image/jpeg\r\n\r\n");
-  }
+  printf("\nResponse header: \n");
+  write(1,output,strlen(output)); //muestra la cabecera
   write(sd,output,strlen(output)); //envia cabecera
   int sf = sendfile(sd,fd,NULL,st.st_size); //envia archivo
   if (sf<0){
@@ -102,9 +121,10 @@ void *hilo(void * paramain ){
   if (sf < st.st_size){
     printf ("faltan enviar datos\n");
   }
-  printf("Archivo cerrado\n\n"); 
   close(fd);
+  printf("\nArchivo cerrado\n"); 
   close(sd);
+  printf("Socket cerrado\n\n"); 
 	pthread_exit(NULL); //termina este hilo
 }
 
@@ -148,7 +168,7 @@ int main(int argc, char * const argv[])
   token2 = strtok(NULL, "=");
   strcpy(conf.droot,token2);
   printf("\nPuerto: %s\n",conf.puerto);
-  printf("root: %s\n",conf.droot);
+  printf("root: %s\n\n",conf.droot);
 
 
 	fc=socket(AF_INET, SOCK_STREAM,0); //creo socket ipv4 on su respectivo descriptor
@@ -167,7 +187,8 @@ int main(int argc, char * const argv[])
 	}
 	listen(fc, 5);
 	while((connfc=accept(fc, NULL, 0))>0){	//si quisiera saber la direccion y puerto del cliente debería poner una estrucura (en el segundo arg) diferente a la struck usada antes. el 3ro es el tamaño del struck, en este caso es 0
-    printf("CONEXION ACEPTADA\n");
+    printf("----------------------------\n");    
+    printf("NUEVA CONEXION ACEPTADA\n");
     leido=read(connfc,buffarg,sizeof buffarg);
   //  paramain = malloc(sizeof(struct parametros));
     strcpy(paramain.lectura,buffarg);
