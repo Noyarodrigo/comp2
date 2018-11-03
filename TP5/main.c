@@ -45,8 +45,8 @@ void *hilo(void * paramain ){
 
   pthread_detach(pthread_self());
 
-  char buff2[1000000], input[1024];
-  int leido, fd;
+  char buff2[10000], input[1024], output[1024];
+  int fd;
   char ruta[150];
 
   struct argumentos arg1;
@@ -66,41 +66,46 @@ void *hilo(void * paramain ){
   fd= open(ruta, O_RDONLY);
   if (fd>0) {
     printf("Archivo abierto\n");
-    write(sd,"HTTP/1.1 200 OK\r\n",16);
+    strcpy(output,"HTTP/1.1 200 OK\r\n");
+    //write(sd,,16);
   }else{
+    strcpy(output,"HTTP/1.1 404 Not Found\r\n\r\n");
+    //write(sd,"HTTP/1.1 404 Not Found\r\n\r\n",strlen("HTTP/1.1 404 Not Found\r\n\r\n"));
     perror("open");
-    write(sd,"HTTP/1.1 404 Not Found\r\n\r\n",strlen("HTTP/1.1 404 Not Found\r\n\r\n"));
     pthread_exit(NULL); //termina este hilo
   }
   if (fstat(fd,&st)!=-1){
     sprintf(input, "Content-Length: %ld\r\n",st.st_size);
-    write(sd,input,strlen(input));
+    strcat(output,input);
+   // write(sd,input,strlen(input));
   }
   if (strcmp(arg1.extension, "pdf") == 0) {
-    strcat(input,"Content-type: application/pdf\r\n\r\n");
+    strcat(output,"Content-type: application/pdf\r\n\r\n");
   }
   if (strcmp(arg1.extension, "txt") == 0) {
-    strcat(input,"Content-type: text/plain\r\n\r\n");
+    strcat(output,"Content-type: text/plain\r\n\r\n");
   }
   if (strcmp(arg1.extension, ".html") == 0) {
-    strcat(input,"Content-type: text/html\r\n\r\n");
+    strcat(output,"Content-type: text/html\r\n\r\n");
   }
-  if (strcmp(arg1.extension, ".jpg") == 0 || strcmp(arg1.extension, ".jpeg") == 0) {
-    strcat(input,"Content-type: image/jpeg\r\n\r\n");
+  if (strcmp(arg1.extension, ".jpg") == 0) {
+    strcat(output,"Content-type: image/jpeg\r\n\r\n");
   }
-
-  //leido = read(fd, buff2, sizeof(buff2));
-  write(sd,input,strlen(input));
-  int sf = sendfile(sd,fd,NULL,st.st_size);
+  if (strcmp(arg1.extension, ".jpeg") == 0){
+    strcat(output,"Content-type: image/jpeg\r\n\r\n");
+  }
+  write(sd,output,strlen(output)); //envia cabecera
+  int sf = sendfile(sd,fd,NULL,st.st_size); //envia archivo
   if (sf<0){
     perror("sendfile");
   }
-  write(sd,buff2,leido);
+  if (sf < st.st_size){
+    printf ("faltan enviar datos\n");
+  }
   printf("Archivo cerrado\n\n"); 
   close(fd);
   close(sd);
-	//pthread_exit(NULL); //termina este hilo
-  return NULL;
+	pthread_exit(NULL); //termina este hilo
 }
 
 int main(int argc, char * const argv[])
