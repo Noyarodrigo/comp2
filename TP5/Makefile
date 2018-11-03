@@ -5,7 +5,7 @@ TARGETS= servidor
 
 all: $(TARGETS)
 
-servidor: main.c obtenerargumentos.c parse.c
+servidor: main.c obtenerargumentos.c respuesta.c
 	$(CC) $(CFLAGS) -o $@ $^ $(LDLIBS)
 
 test: cliente servidor
